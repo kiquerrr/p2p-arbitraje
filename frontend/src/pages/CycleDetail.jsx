@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { generalCyclesAPI, dailyCyclesAPI, ordersAPI, transactionsAPI } from '../services/api';
+import { generalCyclesAPI, dailyCyclesAPI } from '../services/api';
 import { ArrowLeft, Calendar, DollarSign, TrendingUp, ShoppingCart, Store } from 'lucide-react';
+import Modal from '../components/Modal';
+import PublishBuyOrderForm from '../components/PublishBuyOrderForm';
+import PublishSellOrderForm from '../components/PublishSellOrderForm';
 
 const CycleDetail = () => {
   const { id } = useParams();
@@ -11,39 +14,45 @@ const CycleDetail = () => {
   const [orders, setOrders] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showSellModal, setShowSellModal] = useState(false);
 
-  useEffect(() => {
-    loadCycleData();
-  }, [id]);
-
-  const loadCycleData = async () => {
+  const loadCycleData = useCallback(async () => {
     try {
-      // Cargar ciclo general
+      setLoading(true);
       const cycleResponse = await generalCyclesAPI.getById(id);
-      setCycle(cycleResponse.data.data);
+      const generalCycle = cycleResponse.data.data.generalCycle || cycleResponse.data.data;
+      setCycle(generalCycle);
 
-      // Buscar el ciclo diario activo
-      const dailyCycles = cycleResponse.data.data.daily_cycles || [];
+      const dailyCycles = cycleResponse.data.data.dailyCycles || cycleResponse.data.data.daily_cycles || [];
       const activeDailyCycle = dailyCycles.find(dc => dc.status === 'active');
 
       if (activeDailyCycle) {
-        // Cargar estado del día actual
         const dailyResponse = await dailyCyclesAPI.getStatus(activeDailyCycle.id);
-        setDailyCycle(dailyResponse.data.data);
+        const dailyData = dailyResponse.data.data.dailyCycle || dailyResponse.data.data;
+        setDailyCycle(dailyData);
 
-        // Cargar órdenes
-        const ordersResponse = await ordersAPI.list(activeDailyCycle.id);
-        setOrders(ordersResponse.data.data);
+        const ordersData = dailyResponse.data.data.orders || [];
+        setOrders(ordersData);
 
-        // Cargar transacciones
-        const transactionsResponse = await transactionsAPI.list(activeDailyCycle.id);
-        setTransactions(transactionsResponse.data.data);
+        const transactionsData = dailyResponse.data.data.transactions || [];
+        setTransactions(transactionsData);
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
     } finally {
       setLoading(false);
     }
+  }, [id]);
+
+  useEffect(() => {
+    loadCycleData();
+  }, [loadCycleData]);
+
+  const handleOrderSuccess = () => {
+    setShowBuyModal(false);
+    setShowSellModal(false);
+    loadCycleData();
   };
 
   if (loading) {
@@ -62,9 +71,13 @@ const CycleDetail = () => {
     );
   }
 
+  const dayNumber = dailyCycle?.day_number || 0;
+  const capitalInicial = parseFloat(dailyCycle?.capital_inicial_dia || 0);
+  const usdtBoveda = parseFloat(dailyCycle?.usdt_boveda_inicio || 0);
+  const fiatDisponible = parseFloat(dailyCycle?.fiat_disponible_inicio || 0);
+
   return (
     <div style={{ minHeight: '100vh', background: '#f7fafc' }}>
-      {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         padding: '20px 40px',
@@ -92,14 +105,12 @@ const CycleDetail = () => {
         </button>
         <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold' }}>{cycle.name}</h1>
         <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.9 }}>
-          Día {dailyCycle?.day_number || 0} de {cycle.duration_days}
+          Día {dayNumber} de {cycle.duration_days}
         </p>
       </div>
 
-      {/* Main Content */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px' }}>
         
-        {/* Stats Cards */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -117,7 +128,7 @@ const CycleDetail = () => {
               <h3 style={{ margin: 0, fontSize: '14px', color: '#718096' }}>Día Actual</h3>
             </div>
             <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#1a202c' }}>
-              {dailyCycle?.day_number || 0}
+              {dayNumber}
             </p>
           </div>
 
@@ -132,7 +143,7 @@ const CycleDetail = () => {
               <h3 style={{ margin: 0, fontSize: '14px', color: '#718096' }}>Capital Inicial Día</h3>
             </div>
             <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#1a202c' }}>
-              ${dailyCycle?.capital_inicial_dia?.toFixed(2) || '0.00'}
+              ${capitalInicial.toFixed(2)}
             </p>
           </div>
 
@@ -147,7 +158,7 @@ const CycleDetail = () => {
               <h3 style={{ margin: 0, fontSize: '14px', color: '#718096' }}>USDT en Bóveda</h3>
             </div>
             <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#1a202c' }}>
-              {dailyCycle?.usdt_boveda_inicio?.toFixed(4) || '0.0000'}
+              {usdtBoveda.toFixed(4)}
             </p>
           </div>
 
@@ -162,66 +173,75 @@ const CycleDetail = () => {
               <h3 style={{ margin: 0, fontSize: '14px', color: '#718096' }}>Fiat Disponible</h3>
             </div>
             <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#1a202c' }}>
-              ${dailyCycle?.fiat_disponible_inicio?.toFixed(2) || '0.00'}
+              ${fiatDisponible.toFixed(2)}
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '40px' }}>
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600'
-          }}>
+          <button 
+            onClick={() => setShowBuyModal(true)}
+            disabled={!dailyCycle || fiatDisponible <= 0}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: fiatDisponible > 0 ? 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)' : '#e2e8f0',
+              color: fiatDisponible > 0 ? 'white' : '#a0aec0',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: fiatDisponible > 0 ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}
+          >
             <ShoppingCart size={18} />
             Publicar Compra
           </button>
 
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600'
-          }}>
+          <button 
+            onClick={() => setShowSellModal(true)}
+            disabled={!dailyCycle || usdtBoveda <= 0}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: usdtBoveda > 0 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e2e8f0',
+              color: usdtBoveda > 0 ? 'white' : '#a0aec0',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: usdtBoveda > 0 ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}
+          >
             <Store size={18} />
             Publicar Venta
           </button>
 
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#e53e3e',
-            color: 'white',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            marginLeft: 'auto'
-          }}>
+          <button 
+            disabled={!dailyCycle}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: dailyCycle ? '#e53e3e' : '#e2e8f0',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: dailyCycle ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              fontWeight: '600',
+              marginLeft: 'auto'
+            }}
+          >
             Cerrar Día
           </button>
         </div>
 
-        {/* Orders Section */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -240,50 +260,11 @@ const CycleDetail = () => {
             {orders.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#718096' }}>No hay órdenes publicadas</p>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>TIPO</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>CANTIDAD</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>PRECIO</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>ESTADO</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '12px' }}>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            background: order.order_type === 'buy' ? '#c6f6d5' : '#bee3f8',
-                            color: order.order_type === 'buy' ? '#22543d' : '#2c5282'
-                          }}>
-                            {order.order_type === 'buy' ? 'COMPRA' : 'VENTA'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          {order.order_type === 'buy' ? `$${order.cantidad_fiat?.toFixed(2)}` : `${order.cantidad_usdt?.toFixed(4)} USDT`}
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          ${order.precio_publicado?.toFixed(3)}
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          {order.status}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <div>Órdenes aquí</div>
             )}
           </div>
         </div>
 
-        {/* Transactions Section */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
@@ -301,53 +282,36 @@ const CycleDetail = () => {
             {transactions.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#718096' }}>No hay transacciones registradas</p>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>TIPO</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>CANTIDAD USDT</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>PRECIO</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>MONTO FIAT</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>COMISIÓN</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((tx) => (
-                      <tr key={tx.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '12px' }}>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            background: tx.transaction_type === 'buy' ? '#c6f6d5' : '#bee3f8',
-                            color: tx.transaction_type === 'buy' ? '#22543d' : '#2c5282'
-                          }}>
-                            {tx.transaction_type === 'buy' ? 'COMPRA' : 'VENTA'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          {tx.cantidad_usdt?.toFixed(4)}
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          ${tx.precio_ejecutado?.toFixed(3)}
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          ${tx.monto_fiat?.toFixed(2)}
-                        </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
-                          ${tx.comision_plataforma?.toFixed(2) || '0.00'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <div>Transacciones aquí</div>
             )}
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={showBuyModal}
+        onClose={() => setShowBuyModal(false)}
+        title="Publicar Orden de Compra"
+      >
+        <PublishBuyOrderForm
+          dailyCycleId={dailyCycle?.id}
+          onSuccess={handleOrderSuccess}
+          onCancel={() => setShowBuyModal(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showSellModal}
+        onClose={() => setShowSellModal(false)}
+        title="Publicar Orden de Venta"
+      >
+        <PublishSellOrderForm
+          dailyCycleId={dailyCycle?.id}
+          usdtDisponible={usdtBoveda}
+          onSuccess={handleOrderSuccess}
+          onCancel={() => setShowSellModal(false)}
+        />
+      </Modal>
     </div>
   );
 };

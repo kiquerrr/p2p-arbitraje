@@ -19,7 +19,7 @@ const orderController = {
         success: true,
         data: {
           precio_competencia_venta: parseFloat(precio_competencia_venta),
-          precio_compra_sugerido: precio_compra
+          precio_compra: precio_compra
         }
       });
 
