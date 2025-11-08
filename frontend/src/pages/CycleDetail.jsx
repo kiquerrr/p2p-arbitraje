@@ -5,6 +5,8 @@ import { ArrowLeft, Calendar, DollarSign, TrendingUp, ShoppingCart, Store } from
 import Modal from '../components/Modal';
 import PublishBuyOrderForm from '../components/PublishBuyOrderForm';
 import PublishSellOrderForm from '../components/PublishSellOrderForm';
+import RegisterBuyTransactionForm from '../components/RegisterBuyTransactionForm';
+import RegisterSellTransactionForm from '../components/RegisterSellTransactionForm';
 
 const CycleDetail = () => {
   const { id } = useParams();
@@ -16,6 +18,8 @@ const CycleDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
+  const [showRegisterTxModal, setShowRegisterTxModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const loadCycleData = useCallback(async () => {
     try {
@@ -52,6 +56,17 @@ const CycleDetail = () => {
   const handleOrderSuccess = () => {
     setShowBuyModal(false);
     setShowSellModal(false);
+    loadCycleData();
+  };
+
+  const handleRegisterTransaction = (order) => {
+    setSelectedOrder(order);
+    setShowRegisterTxModal(true);
+  };
+
+  const handleTransactionSuccess = () => {
+    setShowRegisterTxModal(false);
+    setSelectedOrder(null);
     loadCycleData();
   };
 
@@ -260,7 +275,75 @@ const CycleDetail = () => {
             {orders.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#718096' }}>No hay órdenes publicadas</p>
             ) : (
-              <div>Órdenes aquí</div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>TIPO</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>CANTIDAD</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>PRECIO</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>MONTO</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>ESTADO</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', color: '#718096', fontWeight: '600' }}>ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            background: order.type === 'buy' ? '#c6f6d5' : '#bee3f8',
+                            color: order.type === 'buy' ? '#22543d' : '#2c5282'
+                          }}>
+                            {order.type === 'buy' ? 'COMPRA' : 'VENTA'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
+                          {parseFloat(order.cantidad_publicada || 0).toFixed(4)} USDT
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
+                          ${parseFloat(order.precio_publicado || 0).toFixed(3)}
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1a202c' }}>
+                          ${parseFloat(order.monto_total_publicado || 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            background: order.status === 'published' ? '#fef5e7' : '#c6f6d5',
+                            color: order.status === 'published' ? '#7d6608' : '#22543d'
+                          }}>
+                            {order.status === 'published' ? 'PUBLICADA' : order.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <button
+                            onClick={() => handleRegisterTransaction(order)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#667eea',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              fontWeight: '600'
+                            }}
+                          >
+                            Registrar Transacción
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -311,6 +394,37 @@ const CycleDetail = () => {
           onSuccess={handleOrderSuccess}
           onCancel={() => setShowSellModal(false)}
         />
+      </Modal>
+
+      <Modal
+        isOpen={showRegisterTxModal}
+        onClose={() => {
+          setShowRegisterTxModal(false);
+          setSelectedOrder(null);
+        }}
+        title={selectedOrder?.type === 'buy' ? 'Registrar Compra Ejecutada' : 'Registrar Venta Ejecutada'}
+      >
+        {selectedOrder && (
+          selectedOrder.type === 'buy' ? (
+            <RegisterBuyTransactionForm
+              order={selectedOrder}
+              onSuccess={handleTransactionSuccess}
+              onCancel={() => {
+                setShowRegisterTxModal(false);
+                setSelectedOrder(null);
+              }}
+            />
+          ) : (
+            <RegisterSellTransactionForm
+              order={selectedOrder}
+              onSuccess={handleTransactionSuccess}
+              onCancel={() => {
+                setShowRegisterTxModal(false);
+                setSelectedOrder(null);
+              }}
+            />
+          )
+        )}
       </Modal>
     </div>
   );

@@ -3,10 +3,10 @@ import { transactionsAPI } from '../services/api';
 
 const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     cantidad_usdt: '',
-    precio_ejecutado: order.precio_publicado || ''
+    precio_ejecutado: parseFloat(order.precio_publicado || 0).toFixed(3)
   });
 
   const handleChange = (e) => {
@@ -18,7 +18,7 @@ const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
@@ -28,9 +28,14 @@ const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
         precio_ejecutado: parseFloat(formData.precio_ejecutado)
       });
 
+      alert('✅ Transacción de compra registrada');
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrar transacción');
+      const errorData = err.response?.data;
+      setError({
+        message: errorData?.message || 'Error al registrar transacción',
+        details: errorData?.data
+      });
     } finally {
       setLoading(false);
     }
@@ -54,7 +59,7 @@ const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
             <strong>Orden #{order.id}</strong> - Compra de USDT
           </p>
           <p style={{ margin: 0, fontSize: '12px', color: '#2c5282' }}>
-            Monto publicado: <strong>${order.cantidad_fiat?.toFixed(2)}</strong> a <strong>${order.precio_publicado?.toFixed(3)}</strong>
+            Monto publicado: <strong>${parseFloat(order.monto_total_publicado || 0).toFixed(2)}</strong> a <strong>${parseFloat(order.precio_publicado || 0).toFixed(3)}</strong>
           </p>
         </div>
 
@@ -80,6 +85,9 @@ const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
               boxSizing: 'border-box'
             }}
           />
+          <small style={{ color: '#718096', fontSize: '12px' }}>
+            Cantidad exacta de USDT que recibiste
+          </small>
         </div>
 
         <div>
@@ -103,6 +111,9 @@ const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
               boxSizing: 'border-box'
             }}
           />
+          <small style={{ color: '#718096', fontSize: '12px' }}>
+            Precio real al que se ejecutó la transacción
+          </small>
         </div>
 
         {formData.cantidad_usdt && formData.precio_ejecutado && (
@@ -128,13 +139,21 @@ const RegisterBuyTransactionForm = ({ order, onSuccess, onCancel }) => {
 
         {error && (
           <div style={{
-            padding: '12px',
+            padding: '16px',
             background: '#fed7d7',
-            color: '#c53030',
             borderRadius: '8px',
-            fontSize: '14px'
+            border: '1px solid #fc8181'
           }}>
-            {error}
+            <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#c53030' }}>
+              {error.message}
+            </p>
+            {error.details && (
+              <div style={{ fontSize: '13px', color: '#742a2a' }}>
+                <p style={{ margin: '4px 0' }}>💰 Fiat disponible: <strong>${error.details.fiat_disponible}</strong></p>
+                <p style={{ margin: '4px 0' }}>📊 Monto requerido: <strong>${error.details.monto_requerido}</strong></p>
+                <p style={{ margin: '4px 0' }}>❌ Faltante: <strong>${error.details.faltante}</strong></p>
+              </div>
+            )}
           </div>
         )}
 

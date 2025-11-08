@@ -49,8 +49,10 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
         precio_competencia_venta: parseFloat(formData.precio_competencia_venta)
       });
 
+      alert('✅ Orden de compra publicada exitosamente');
       onSuccess();
     } catch (err) {
+      console.error('Error completo:', err);
       setError(err.response?.data?.message || 'Error al publicar orden');
     } finally {
       setLoading(false);
@@ -74,7 +76,6 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
               </p>
             </div>
 
-            {/* Cantidad Fiat */}
             <div>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
                 Cantidad a Invertir (USD) *
@@ -97,12 +98,8 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
                   boxSizing: 'border-box'
                 }}
               />
-              <small style={{ color: '#718096', fontSize: '12px' }}>
-                Monto en dólares que usarás para comprar USDT
-              </small>
             </div>
 
-            {/* Precio Competencia */}
             <div>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
                 Precio de Competencia (Venta) *
@@ -125,9 +122,6 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
                   boxSizing: 'border-box'
                 }}
               />
-              <small style={{ color: '#718096', fontSize: '12px' }}>
-                Precio al que la competencia está vendiendo USDT (ve a Binance P2P)
-              </small>
             </div>
 
             {error && (
@@ -142,7 +136,6 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
               </div>
             )}
 
-            {/* Botones */}
             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
               <button
                 type="button"
@@ -196,7 +189,6 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
             </p>
           </div>
 
-          {/* Resultado */}
           <div style={{
             padding: '20px',
             background: '#f7fafc',
@@ -236,17 +228,6 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
             </div>
           </div>
 
-          <div style={{
-            padding: '12px',
-            background: '#fef5e7',
-            borderRadius: '8px',
-            border: '1px solid #f9e79f'
-          }}>
-            <p style={{ margin: 0, fontSize: '12px', color: '#7d6608' }}>
-              ⚠️ Tu precio es <strong>$0.001</strong> menor que la competencia, lo que te hace más atractivo para los vendedores.
-            </p>
-          </div>
-
           {error && (
             <div style={{
               padding: '12px',
@@ -259,7 +240,6 @@ const PublishBuyOrderForm = ({ dailyCycleId, onSuccess, onCancel }) => {
             </div>
           )}
 
-          {/* Botones */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
               type="button"

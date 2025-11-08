@@ -55,6 +55,20 @@ const transactionController = {
       const usdt_antes = parseFloat(currentState.rows[0].usdt_boveda_inicio);
       const fiat_antes = parseFloat(currentState.rows[0].fiat_disponible_inicio);
 
+      // VALIDACIÓN CRÍTICA: Verificar que hay suficiente fiat disponible
+      if (fiat_antes < monto_fiat_gastado) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          success: false,
+          message: "Fiat insuficiente para esta transacción",
+          data: {
+            fiat_disponible: fiat_antes.toFixed(2),
+            monto_requerido: monto_fiat_gastado.toFixed(2),
+            faltante: (monto_fiat_gastado - fiat_antes).toFixed(2)
+          }
+        });
+      }
+
       // Registrar transacción
       const transactionResult = await client.query(
         `INSERT INTO transactions 
