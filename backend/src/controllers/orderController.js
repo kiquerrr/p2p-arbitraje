@@ -91,10 +91,14 @@ const orderController = {
         data: {
           precio_compra: P_C,
           precio_venta_calculado,
-          precio_venta_final,
+          precio_venta: precio_venta_final,
           punto_equilibrio,
           margen_seguridad: precio_venta_final - punto_equilibrio,
-          ganancia_esperada_porcentaje: ((precio_venta_final - P_C) / P_C * 100).toFixed(4)
+          ganancia_neta_porcentaje: (precio_venta_final - P_C) / P_C,
+          validacion: {
+            es_valido: true,
+            mensaje: 'Precio válido - Ganancia asegurada'
+          }
         }
       });
 

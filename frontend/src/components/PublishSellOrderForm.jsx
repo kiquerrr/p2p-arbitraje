@@ -31,7 +31,7 @@ const PublishSellOrderForm = ({ dailyCycleId, usdtDisponible, onSuccess, onCance
         precio_compra: parseFloat(formData.precio_compra),
         precio_competencia_compra: parseFloat(formData.precio_competencia_compra),
         ganancia_neta_objetivo: parseFloat(formData.ganancia_neta_objetivo),
-        comision_plataforma: parseFloat(formData.comision_plataforma)
+        comision: parseFloat(formData.comision_plataforma)
       });
 
       setCalculatedPrice(response.data.data);
