@@ -27,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/general-cycles', generalCycleRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/vault', require('./routes/vaultRoutes'));
 app.use('/api/daily-cycles', dailyCycleRoutes);
 
 app.use((req, res) => {

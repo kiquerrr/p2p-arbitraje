@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import { generalCyclesAPI } from '../services/api';
+import { generalCyclesAPI, vaultAPI } from '../services/api';
 
-const NewCycleForm = ({ onSuccess, onCancel }) => {
+const NewCycleForm = ({ onSuccess, onCancel, availableBalance }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
+    duration_days: 15,
     capital_inicial_general: '',
-    duration_days: '15',
-    target_profit_percent: '0.0257',
-    commission_percent: '0.0035',
-    platform_id: 1,
-    currency_id: 1
+    target_profit_percent: 2.0,
+    commission_percent: 0.6
   });
 
   const handleChange = (e) => {
@@ -26,19 +24,45 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
     setError('');
     setLoading(true);
 
-    try {
-      const data = {
-        ...formData,
-        capital_inicial_general: parseFloat(formData.capital_inicial_general),
-        duration_days: parseInt(formData.duration_days),
-        target_profit_percent: parseFloat(formData.target_profit_percent),
-        commission_percent: parseFloat(formData.commission_percent)
-      };
+    const capital = parseFloat(formData.capital_inicial_general);
 
-      await generalCyclesAPI.create(data);
+    if (capital > availableBalance) {
+      setError(`Fondos insuficientes. Disponible: $${availableBalance.toFixed(2)}`);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Crear el ciclo
+      const cycleResponse = await generalCyclesAPI.create(formData);
+      console.log('Cycle Response:', cycleResponse.data);
+      
+      // Extraer ID del ciclo - probar múltiples estructuras
+      const cycleId = cycleResponse.data.data?.generalCycle?.id || 
+                      cycleResponse.data.data?.id ||
+                      cycleResponse.data.id;
+
+      console.log('Cycle ID:', cycleId);
+
+      if (!cycleId) {
+        throw new Error('No se pudo obtener el ID del ciclo creado');
+      }
+
+      // 2. Transferir capital de bóveda a ciclo
+      const transferResponse = await vaultAPI.transferToCycle({
+        general_cycle_id: cycleId,
+        amount: capital,
+        description: `Capital inicial para ciclo: ${formData.name}`
+      });
+
+      console.log('Transfer Response:', transferResponse.data);
+
+      alert('✅ Ciclo creado y capital transferido exitosamente');
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al crear ciclo');
+      console.error('Error completo:', err);
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.message || err.message || 'Error al crear ciclo');
     } finally {
       setLoading(false);
     }
@@ -48,7 +72,17 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
     <form onSubmit={handleSubmit}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
-        {/* Nombre del Ciclo */}
+        <div style={{
+          padding: '16px',
+          background: '#f0f9ff',
+          borderRadius: '8px',
+          border: '1px solid #7dd3fc'
+        }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#0c4a6e', fontWeight: '600' }}>
+            💰 Balance Disponible: ${availableBalance.toFixed(2)}
+          </p>
+        </div>
+
         <div>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
             Nombre del Ciclo *
@@ -59,7 +93,7 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
             value={formData.name}
             onChange={handleChange}
             required
-            placeholder="Ej: Ciclo Noviembre 2025"
+            placeholder="Ej: Ciclo Enero 2025"
             style={{
               width: '100%',
               padding: '12px',
@@ -71,10 +105,9 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
           />
         </div>
 
-        {/* Capital Inicial */}
         <div>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
-            Capital Inicial (USD) *
+            Capital Inicial *
           </label>
           <input
             type="number"
@@ -82,9 +115,10 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
             value={formData.capital_inicial_general}
             onChange={handleChange}
             required
-            min="1"
+            min="0.01"
+            max={availableBalance}
             step="0.01"
-            placeholder="1000"
+            placeholder="1000.00"
             style={{
               width: '100%',
               padding: '12px',
@@ -94,49 +128,23 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
               boxSizing: 'border-box'
             }}
           />
+          <small style={{ color: '#718096', fontSize: '12px' }}>
+            Máximo disponible: ${availableBalance.toFixed(2)}
+          </small>
         </div>
 
-        {/* Duración */}
         <div>
           <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
-            Duración del Ciclo *
+            Duración (días) *
           </label>
-          <select
+          <input
+            type="number"
             name="duration_days"
             value={formData.duration_days}
             onChange={handleChange}
             required
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              fontSize: '14px',
-              boxSizing: 'border-box'
-            }}
-          >
-            <option value="7">7 días</option>
-            <option value="15">15 días</option>
-            <option value="30">30 días</option>
-            <option value="60">60 días</option>
-            <option value="90">90 días</option>
-          </select>
-        </div>
-
-        {/* Ganancia Objetivo */}
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
-            Ganancia Neta Objetivo (%)
-          </label>
-          <input
-            type="number"
-            name="target_profit_percent"
-            value={formData.target_profit_percent}
-            onChange={handleChange}
-            required
-            min="0"
-            step="0.0001"
-            placeholder="0.0257"
+            min="1"
+            max="365"
             style={{
               width: '100%',
               padding: '12px',
@@ -146,37 +154,52 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
               boxSizing: 'border-box'
             }}
           />
-          <small style={{ color: '#718096', fontSize: '12px' }}>
-            Ejemplo: 0.0257 = 2.57% diario
-          </small>
         </div>
 
-        {/* Comisión */}
-        <div>
-          <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
-            Comisión de Plataforma (%)
-          </label>
-          <input
-            type="number"
-            name="commission_percent"
-            value={formData.commission_percent}
-            onChange={handleChange}
-            required
-            min="0"
-            step="0.0001"
-            placeholder="0.0035"
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              fontSize: '14px',
-              boxSizing: 'border-box'
-            }}
-          />
-          <small style={{ color: '#718096', fontSize: '12px' }}>
-            Ejemplo: 0.0035 = 0.35%
-          </small>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
+              Ganancia Objetivo (%)
+            </label>
+            <input
+              type="number"
+              name="target_profit_percent"
+              value={formData.target_profit_percent}
+              onChange={handleChange}
+              step="0.1"
+              min="0"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '8px' }}>
+              Comisión (%)
+            </label>
+            <input
+              type="number"
+              name="commission_percent"
+              value={formData.commission_percent}
+              onChange={handleChange}
+              step="0.1"
+              min="0"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
         </div>
 
         {error && (
@@ -191,7 +214,6 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
           </div>
         )}
 
-        {/* Botones */}
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
           <button
             type="button"
@@ -213,7 +235,7 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !formData.capital_inicial_general || parseFloat(formData.capital_inicial_general) > availableBalance}
             style={{
               flex: 1,
               padding: '12px',
@@ -223,7 +245,7 @@ const NewCycleForm = ({ onSuccess, onCancel }) => {
               borderRadius: '8px',
               fontSize: '14px',
               fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer'
+              cursor: (loading || parseFloat(formData.capital_inicial_general) > availableBalance) ? 'not-allowed' : 'pointer'
             }}
           >
             {loading ? 'Creando...' : 'Crear Ciclo'}

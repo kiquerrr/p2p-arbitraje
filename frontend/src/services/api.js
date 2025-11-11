@@ -63,3 +63,10 @@ export const transactionsAPI = {
 };
 
 export default api;
+
+export const vaultAPI = {
+  getStatus: () => api.get('/vault/status'),
+  addDeposit: (data) => api.post('/vault/deposit', data),
+  transferToCycle: (data) => api.post('/vault/transfer-to-cycle', data),
+  getMovements: (limit) => api.get(`/vault/movements?limit=${limit || 50}`),
+};
