@@ -66,15 +66,16 @@ const CycleDetail = () => {
     setShowRegisterTxModal(true);
   };
 
+  const handleCloseDaySuccess = () => {
+    setShowCloseDayModal(false);
+    navigate('/');
+  };
+
+
   const handleTransactionSuccess = () => {
     setShowRegisterTxModal(false);
     setSelectedOrder(null);
     loadCycleData();
-  };
-
-  const handleCloseDaySuccess = () => {
-    setShowCloseDayModal(false);
-    navigate('/');
   };
 
   if (loading) {
@@ -433,18 +434,6 @@ const CycleDetail = () => {
             />
           )
         )}
-      </Modal>
-
-      <Modal
-        isOpen={showCloseDayModal}
-        onClose={() => setShowCloseDayModal(false)}
-        title="Cerrar Día"
-      >
-        <CloseDayForm
-          dailyCycle={dailyCycle}
-          onSuccess={handleCloseDaySuccess}
-          onCancel={() => setShowCloseDayModal(false)}
-        />
       </Modal>
     </div>
   );
