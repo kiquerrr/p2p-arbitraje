@@ -10,4 +10,5 @@ router.post('/deposit', vaultController.addDeposit);
 router.post('/transfer-to-cycle', vaultController.transferToCycle);
 router.get('/movements', vaultController.getMovements);
 
+router.post('/transfer-from-cycle', vaultController.transferFromCycle);
 module.exports = router;

@@ -235,7 +235,132 @@ const vaultController = {
         message: 'Error al obtener movimientos'
       });
     }
+  },
+  // Transferir de ciclo a bóveda
+  transferFromCycle: async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const { general_cycle_id, amount, description } = req.body;
+
+      if (!general_cycle_id || !amount || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Parámetros inválidos'
+        });
+      }
+
+      await client.query('BEGIN');
+
+      // Verificar ciclo
+      const cycleResult = await client.query(
+        'SELECT * FROM general_cycles WHERE id = $1 AND user_id = $2',
+        [general_cycle_id, req.user.id]
+      );
+
+      if (cycleResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({
+          success: false,
+          message: 'Ciclo no encontrado'
+        });
+      }
+
+      // Obtener día activo del ciclo
+      const dailyCycleResult = await client.query(
+        `SELECT * FROM daily_cycles 
+         WHERE general_cycle_id = $1 AND status = 'active'
+         LIMIT 1`,
+        [general_cycle_id]
+      );
+
+      if (dailyCycleResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: 'No hay día activo en este ciclo'
+        });
+      }
+
+      const dailyCycle = dailyCycleResult.rows[0];
+      const fiatDisponible = parseFloat(dailyCycle.fiat_disponible_inicio || 0);
+
+      if (fiatDisponible < parseFloat(amount)) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          message: 'Fondos insuficientes en el ciclo',
+          data: {
+            disponible: fiatDisponible,
+            requerido: parseFloat(amount)
+          }
+        });
+      }
+
+      // Actualizar día activo del ciclo
+      const newFiatDisponible = fiatDisponible - parseFloat(amount);
+      await client.query(
+        `UPDATE daily_cycles 
+         SET fiat_disponible_inicio = $1
+         WHERE id = $2`,
+        [newFiatDisponible, dailyCycle.id]
+      );
+
+      // Obtener bóveda
+      const vaultResult = await client.query(
+        'SELECT * FROM vault WHERE user_id = $1',
+        [req.user.id]
+      );
+
+      const vault = vaultResult.rows[0];
+      const balanceDisponible = parseFloat(vault.balance_disponible);
+      const balanceInvertido = parseFloat(vault.balance_invertido);
+
+      // Actualizar bóveda
+      const newBalanceDisponible = balanceDisponible + parseFloat(amount);
+      const newBalanceInvertido = Math.max(0, balanceInvertido - parseFloat(amount));
+
+      await client.query(
+        `UPDATE vault 
+         SET balance_disponible = $1,
+             balance_invertido = $2,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3`,
+        [newBalanceDisponible, newBalanceInvertido, vault.id]
+      );
+
+      // Registrar movimiento
+      await client.query(
+        `INSERT INTO vault_movements 
+         (vault_id, type, amount, balance_antes, balance_despues, general_cycle_id, description)
+         VALUES ($1, 'transfer_from_cycle', $2, $3, $4, $5, $6)`,
+        [vault.id, amount, balanceDisponible, newBalanceDisponible, general_cycle_id,
+         description || `Retiro desde ciclo #${general_cycle_id}`]
+      );
+
+      await client.query('COMMIT');
+
+      res.json({
+        success: true,
+        message: '✅ Transferencia exitosa',
+        data: {
+          balance_disponible: newBalanceDisponible,
+          balance_invertido: newBalanceInvertido,
+          fiat_ciclo: newFiatDisponible,
+          monto_transferido: parseFloat(amount)
+        }
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error transfiriendo desde ciclo:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error al transferir fondos'
+      });
+    } finally {
+      client.release();
+    }
   }
+
 };
 
 module.exports = vaultController;

@@ -68,5 +68,6 @@ export const vaultAPI = {
   getStatus: () => api.get('/vault/status'),
   addDeposit: (data) => api.post('/vault/deposit', data),
   transferToCycle: (data) => api.post('/vault/transfer-to-cycle', data),
+  transferFromCycle: (data) => api.post('/vault/transfer-from-cycle', data),
   getMovements: (limit) => api.get(`/vault/movements?limit=${limit || 50}`),
 };
