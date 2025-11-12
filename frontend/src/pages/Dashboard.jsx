@@ -4,8 +4,8 @@ import { generalCyclesAPI, vaultAPI } from '../services/api';
 import { PlusCircle, Wallet, TrendingUp, DollarSign, BarChart3, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 import NewCycleForm from '../components/NewCycleForm';
-import DepositForm from '../components/DepositForm';
 import VaultMovements from '../components/VaultMovements';
+import DepositForm from '../components/DepositForm';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -286,6 +286,21 @@ const Dashboard = () => {
         </div>
       </div>
 
+
+        {/* Movimientos de Bóveda */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginTop: '32px'
+        }}>
+          <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold', color: '#1a202c' }}>
+            📊 Movimientos de Bóveda
+          </h2>
+          <VaultMovements />
+        </div>
+
       <Modal
         isOpen={showNewCycleModal}
         onClose={() => setShowNewCycleModal(false)}
@@ -297,6 +312,21 @@ const Dashboard = () => {
           availableBalance={balanceDisponible}
         />
       </Modal>
+
+
+        {/* Movimientos de Bóveda */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginTop: '32px'
+        }}>
+          <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold', color: '#1a202c' }}>
+            📊 Movimientos de Bóveda
+          </h2>
+          <VaultMovements />
+        </div>
 
       <Modal
         isOpen={showDepositModal}

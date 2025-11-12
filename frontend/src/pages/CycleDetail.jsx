@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { generalCyclesAPI, dailyCyclesAPI } from '../services/api';
+import { generalCyclesAPI, dailyCyclesAPI, ordersAPI } from '../services/api';
 import { ArrowLeft, Calendar, DollarSign, TrendingUp, ShoppingCart, Store } from 'lucide-react';
 import Modal from '../components/Modal';
 import PublishBuyOrderForm from '../components/PublishBuyOrderForm';
@@ -72,6 +72,18 @@ const CycleDetail = () => {
     setShowRegisterTxModal(false);
     setSelectedOrder(null);
     loadCycleData();
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('¿Estás seguro de cancelar esta orden?')) return;
+    
+    try {
+      await ordersAPI.cancelOrder(orderId);
+      alert('✅ Orden cancelada exitosamente');
+      loadCycleData();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Error al cancelar orden');
+    }
   };
 
   const handleCloseDaySuccess = () => {
@@ -333,21 +345,56 @@ const CycleDetail = () => {
                           </span>
                         </td>
                         <td style={{ padding: '12px' }}>
-                          <button
-                            onClick={() => handleRegisterTransaction(order)}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#667eea',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              fontWeight: '600'
-                            }}
-                          >
-                            Registrar Transacción
-                          </button>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => handleRegisterTransaction(order)}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#667eea',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                fontWeight: '600'
+                              }}
+                            >
+                              Registrar
+                            </button>
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              disabled={!order.is_active || order.status !== 'published'}
+                              style={{
+                                padding: '6px 12px',
+                                background: (order.is_active && order.status === 'published') ? '#ef4444' : '#e2e8f0',
+                                color: (order.is_active && order.status === 'published') ? 'white' : '#a0aec0',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                cursor: (order.is_active && order.status === 'published') ? 'pointer' : 'not-allowed',
+                                fontWeight: '600'
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </td>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                         </td>
                       </tr>
                     ))}
