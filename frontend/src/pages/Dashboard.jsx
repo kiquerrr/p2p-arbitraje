@@ -5,6 +5,7 @@ import { PlusCircle, Wallet, TrendingUp, DollarSign, BarChart3, ArrowDownCircle,
 import Modal from '../components/Modal';
 import NewCycleForm from '../components/NewCycleForm';
 import DepositForm from '../components/DepositForm';
+import VaultMovements from '../components/VaultMovements';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -222,6 +223,19 @@ const Dashboard = () => {
             <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#1a202c' }}>
               Ciclos Generales
             </h2>
+
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginTop: '40px'
+        }}>
+          <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold', color: '#1a202c' }}>
+            Movimientos de Bóveda
+          </h2>
+          <VaultMovements />
+        </div>
           </div>
 
           {cycles.length === 0 ? (

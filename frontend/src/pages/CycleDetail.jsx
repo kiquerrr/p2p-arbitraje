@@ -7,10 +7,9 @@ import PublishBuyOrderForm from '../components/PublishBuyOrderForm';
 import PublishSellOrderForm from '../components/PublishSellOrderForm';
 import RegisterBuyTransactionForm from '../components/RegisterBuyTransactionForm';
 import RegisterSellTransactionForm from '../components/RegisterSellTransactionForm';
+import CloseDayForm from '../components/CloseDayForm';
 import TransactionsTable from '../components/TransactionsTable';
 import DailyHistoryTable from '../components/DailyHistoryTable';
-import CloseDayForm from '../components/CloseDayForm';
-import TransferFromCycleForm from '../components/TransferFromCycleForm';
 
 const CycleDetail = () => {
   const { id } = useParams();
@@ -24,9 +23,7 @@ const CycleDetail = () => {
   const [showSellModal, setShowSellModal] = useState(false);
   const [showRegisterTxModal, setShowRegisterTxModal] = useState(false);
   const [showCloseDayModal, setShowCloseDayModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [allDailyCycles, setAllDailyCycles] = useState([]);
 
   const loadCycleData = useCallback(async () => {
     try {
@@ -36,7 +33,6 @@ const CycleDetail = () => {
       setCycle(generalCycle);
 
       const dailyCycles = cycleResponse.data.data.dailyCycles || cycleResponse.data.data.daily_cycles || [];
-      setAllDailyCycles(dailyCycles);
       const activeDailyCycle = dailyCycles.find(dc => dc.status === 'active');
 
       if (activeDailyCycle) {
@@ -77,12 +73,6 @@ const CycleDetail = () => {
     setSelectedOrder(null);
     loadCycleData();
   };
-
-  const handleTransferSuccess = () => {
-    setShowTransferModal(false);
-    loadCycleData();
-  };
-
 
   const handleCloseDaySuccess = () => {
     setShowCloseDayModal(false);
@@ -275,26 +265,6 @@ const CycleDetail = () => {
           >
             Cerrar Día
           </button>
-
-          <button
-            onClick={() => setShowTransferModal(true)}
-            disabled={!dailyCycle || fiatDisponible <= 0}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: (dailyCycle && fiatDisponible > 0) ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : '#e2e8f0',
-              color: (dailyCycle && fiatDisponible > 0) ? 'white' : '#a0aec0',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: (dailyCycle && fiatDisponible > 0) ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}
-          >
-            Retirar a Bóveda
-          </button>
         </div>
 
         <div style={{
@@ -398,26 +368,6 @@ const CycleDetail = () => {
             borderBottom: '1px solid #e2e8f0'
           }}>
             <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1a202c' }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          marginBottom: '20px'
-        }}>
-          <div style={{
-            padding: '20px',
-            borderBottom: '1px solid #e2e8f0'
-          }}>
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1a202c' }}>
-              Historial de Días
-            </h2>
-          </div>
-          <div style={{ padding: '20px' }}>
-            <DailyHistoryTable dailyCycles={allDailyCycles} />
-          </div>
-        </div>
-
-
               Transacciones Ejecutadas
             </h2>
           </div>
@@ -496,20 +446,6 @@ const CycleDetail = () => {
           dailyCycle={dailyCycle}
           onSuccess={handleCloseDaySuccess}
           onCancel={() => setShowCloseDayModal(false)}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        title="Retirar a Bóveda"
-      >
-        <TransferFromCycleForm
-          generalCycleId={cycle?.id}
-          cycleName={cycle?.name}
-          fiatDisponible={fiatDisponible}
-          onSuccess={handleTransferSuccess}
-          onCancel={() => setShowTransferModal(false)}
         />
       </Modal>
     </div>

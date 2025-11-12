@@ -53,13 +53,16 @@ export const ordersAPI = {
   publishBuy: (data) => api.post('/orders/publish-buy', data),
   publishSell: (data) => api.post('/orders/publish-sell', data),
   list: (dailyCycleId) => api.get(`/orders/daily-cycle/${dailyCycleId}`),
+  cancelOrder: (orderId) => api.put(`/orders/${orderId}/cancel`),
   cancel: (orderId) => api.put(`/orders/${orderId}/cancel`),
+  cancelOrder: (orderId) => api.put(`/orders/${orderId}/cancel`),
 };
 
 export const transactionsAPI = {
   registerBuy: (data) => api.post('/transactions/register-buy', data),
   registerSell: (data) => api.post('/transactions/register-sell', data),
   list: (dailyCycleId) => api.get(`/transactions/daily-cycle/${dailyCycleId}`),
+  cancelOrder: (orderId) => api.put(`/orders/${orderId}/cancel`),
 };
 
 export default api;
