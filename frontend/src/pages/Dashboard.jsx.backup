@@ -287,7 +287,6 @@ const Dashboard = () => {
       </div>
 
 
-
       <Modal
         isOpen={showNewCycleModal}
         onClose={() => setShowNewCycleModal(false)}

@@ -287,6 +287,19 @@ const Dashboard = () => {
       </div>
 
 
+        {/* Movimientos de Bóveda */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginTop: '32px'
+        }}>
+          <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold', color: '#1a202c' }}>
+            📊 Movimientos de Bóveda
+          </h2>
+          <VaultMovements />
+        </div>
 
       <Modal
         isOpen={showNewCycleModal}
@@ -299,6 +312,22 @@ const Dashboard = () => {
           availableBalance={balanceDisponible}
         />
       </Modal>
+
+
+        {/* Movimientos de Bóveda */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginTop: '32px'
+        }}>
+          <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: 'bold', color: '#1a202c' }}>
+            📊 Movimientos de Bóveda
+          </h2>
+          <VaultMovements />
+        </div>
+
       <Modal
         isOpen={showDepositModal}
         onClose={() => setShowDepositModal(false)}
